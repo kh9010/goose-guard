@@ -14,7 +14,7 @@ from astral import LocationInfo
 from astral.sun import sun
 
 
-# Default coordinates (update for your property)
+# Fallback coordinates (Seattle area) — overridden by config.json "location".
 DEFAULT_LAT = 47.6456
 DEFAULT_LNG = -122.2187
 DEFAULT_TIMEZONE = "America/Los_Angeles"
@@ -25,12 +25,23 @@ class DeterrentScheduler:
         self.sound_engine = sound_engine
         self.config = config
         self.log_callback = log_callback or (lambda msg, src: None)
-        self.scheduler = BackgroundScheduler(timezone=DEFAULT_TIMEZONE)
+        loc_cfg = config.get("location", {}) or {}
+        tz = loc_cfg.get("timezone", DEFAULT_TIMEZONE)
+        # APScheduler's timezone is fixed at init — timezone changes require a restart.
+        self.scheduler = BackgroundScheduler(timezone=tz)
         self._session_active = False
         self._session_thread = None
-        self.location = LocationInfo(
-            "Property", "WA", DEFAULT_TIMEZONE,
-            DEFAULT_LAT, DEFAULT_LNG
+        self.location = self._build_location()
+
+    def _build_location(self):
+        """Build a LocationInfo from config (refreshable at reschedule time)."""
+        loc = self.config.get("location", {}) or {}
+        return LocationInfo(
+            loc.get("name", "Property"),
+            loc.get("region", ""),
+            loc.get("timezone", DEFAULT_TIMEZONE),
+            float(loc.get("latitude", DEFAULT_LAT)),
+            float(loc.get("longitude", DEFAULT_LNG)),
         )
 
     def start(self):
@@ -197,6 +208,7 @@ class DeterrentScheduler:
     def reschedule(self):
         """Call after config changes to re-plan today's sessions."""
         self._session_active = False
+        self.location = self._build_location()
         self._schedule_today()
 
     def get_next_times(self):

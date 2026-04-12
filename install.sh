@@ -34,6 +34,7 @@ mkdir -p "$INSTALL_DIR/sounds/predator"
 mkdir -p "$INSTALL_DIR/sounds/distress"
 mkdir -p "$INSTALL_DIR/sounds/startle"
 mkdir -p "$INSTALL_DIR/sounds/custom"
+mkdir -p "$INSTALL_DIR/sounds/generated"
 
 # 7. Install systemd service
 echo "Installing systemd service..."

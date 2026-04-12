@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Goose Guard Status">
+  <title>Goose Guard — Status</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Fraunces:ital,wght@1,400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      background: #fafaf8;
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 1.5rem;
+      padding-bottom: 3rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 1.6rem;
+    }
+
+    h1 small {
+      font-family: 'Space Grotesk', sans-serif;
+      font-style: normal;
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #888;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+
+    .mode-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: #1a1a1a;
+      color: #fafaf8;
+      padding: 0.3rem 0.7rem;
+      border-radius: 3px;
+    }
+    .mode-badge.manual { background: #999; }
+    .mode-badge.motion { background: #6b7c5e; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e8e6e1;
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #888;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: #888;
+      margin-bottom: 0.8rem;
+      line-height: 1.5;
+    }
+
+    /* Metric grid */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.9rem 1rem;
+    }
+    .metric { display: flex; flex-direction: column; }
+    .metric-key {
+      font-size: 0.65rem;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      margin-bottom: 0.15rem;
+    }
+    .metric-value {
+      font-size: 0.95rem;
+      color: #1a1a1a;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-value.active { color: #6b7c5e; }
+    .metric-value.warn { color: #d4a84c; }
+    .metric-value.error { color: #c44; }
+
+    .bar {
+      margin-top: 0.35rem;
+      height: 4px;
+      background: #f0eeea;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      background: #1a1a1a;
+      width: 0%;
+      transition: width 0.35s;
+    }
+    .bar-fill.warn { background: #d4a84c; }
+    .bar-fill.hot { background: #c44; }
+
+    /* Activity log */
+    .log-entry {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.4rem 0;
+      font-size: 0.8rem;
+      border-bottom: 1px solid #f8f7f5;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-time { color: #bbb; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .log-sound { color: #444; }
+    .log-source { color: #bbb; font-size: 0.72rem; margin-left: auto; flex-shrink: 0; }
+    .empty-state {
+      font-size: 0.82rem;
+      color: #ccc;
+      font-style: italic;
+      padding: 0.5rem 0;
+    }
+
+    /* Architecture diagram */
+    .arch {
+      font-family: 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      line-height: 1.45;
+      color: #555;
+      background: #faf9f5;
+      border: 1px solid #f0eeea;
+      padding: 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .arch-note {
+      font-size: 0.76rem;
+      color: #777;
+      margin-top: 0.8rem;
+      line-height: 1.6;
+    }
+
+    /* Location form */
+    .loc-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem 0.75rem;
+      margin-top: 0.4rem;
+    }
+    .loc-form .field { display: flex; flex-direction: column; gap: 0.25rem; }
+    .loc-form .field.full { grid-column: 1 / -1; }
+    .loc-form label {
+      font-size: 0.65rem;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .loc-form input {
+      font-family: inherit;
+      font-size: 0.88rem;
+      padding: 0.5rem 0.65rem;
+      border: 1px solid #e8e6e1;
+      border-radius: 4px;
+      background: #fafaf8;
+      color: #1a1a1a;
+      -webkit-appearance: none;
+    }
+    .loc-form input:focus {
+      outline: none;
+      border-color: #1a1a1a;
+      background: #fff;
+    }
+
+    .btn {
+      background: #1a1a1a;
+      color: #fafaf8;
+      border: none;
+      border-radius: 4px;
+      padding: 0.55rem 1rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn.secondary { background: none; color: #1a1a1a; border: 1px solid #e8e6e1; }
+
+    .form-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 0.3rem;
+    }
+    .form-msg {
+      grid-column: 1 / -1;
+      font-size: 0.75rem;
+      color: #6b7c5e;
+      min-height: 1em;
+    }
+    .form-msg.error { color: #c44; }
+
+    /* Hardware */
+    .hw-tabs {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 0.9rem;
+      flex-wrap: wrap;
+    }
+    .hw-tab {
+      background: none;
+      border: 1px solid #e8e6e1;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: #888;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hw-tab.active {
+      background: #1a1a1a;
+      color: #fafaf8;
+      border-color: #1a1a1a;
+    }
+    .hw-item {
+      padding: 0.9rem 0;
+      border-bottom: 1px solid #f0eeea;
+    }
+    .hw-item:last-child { border-bottom: none; }
+    .hw-name {
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: #1a1a1a;
+      margin-bottom: 0.25rem;
+    }
+    .hw-role {
+      font-size: 0.78rem;
+      color: #666;
+      margin-bottom: 0.3rem;
+    }
+    .hw-notes {
+      font-size: 0.72rem;
+      color: #999;
+      line-height: 1.55;
+      margin-bottom: 0.55rem;
+    }
+    .hw-vendors {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .hw-vendor {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: #1a1a1a;
+      text-decoration: none;
+      padding: 0.35rem 0.7rem;
+      border: 1px solid #e8e6e1;
+      border-radius: 4px;
+      background: #fafaf8;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hw-vendor:active { background: #f0eeea; }
+    .hw-badge {
+      display: inline-block;
+      font-size: 0.6rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      background: #f0eeea;
+      color: #888;
+      padding: 0.18rem 0.45rem;
+      border-radius: 3px;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+    .hw-badge.required { background: #1a1a1a; color: #fafaf8; }
+
+    .footer-link {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.85rem;
+    }
+    .footer-link a {
+      color: #1a1a1a;
+      text-decoration: none;
+      border-bottom: 1px solid #e8e6e1;
+      padding-bottom: 0.1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>goose guard<small>status</small></h1>
+    <span class="mode-badge" id="modeBadge">—</span>
+  </header>
+
+  <!-- System vitals -->
+  <div class="card">
+    <span class="label">System</span>
+    <div class="metric-grid">
+      <div class="metric">
+        <span class="metric-key">Service</span>
+        <span class="metric-value" id="m-service">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-key">Uptime</span>
+        <span class="metric-value" id="m-uptime">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-key">Hostname</span>
+        <span class="metric-value" id="m-hostname">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-key">IP</span>
+        <span class="metric-value" id="m-ip">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-key">CPU temp</span>
+        <span class="metric-value" id="m-cputemp">—</span>
+        <div class="bar"><div class="bar-fill" id="m-cputemp-bar"></div></div>
+      </div>
+      <div class="metric">
+        <span class="metric-key">Memory</span>
+        <span class="metric-value" id="m-mem">—</span>
+        <div class="bar"><div class="bar-fill" id="m-mem-bar"></div></div>
+      </div>
+      <div class="metric">
+        <span class="metric-key">Disk</span>
+        <span class="metric-value" id="m-disk">—</span>
+        <div class="bar"><div class="bar-fill" id="m-disk-bar"></div></div>
+      </div>
+      <div class="metric">
+        <span class="metric-key">Load avg</span>
+        <span class="metric-value" id="m-load">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Now -->
+  <div class="card">
+    <span class="label">Now</span>
+    <div class="metric-grid">
+      <div class="metric">
+        <span class="metric-key">Playing</span>
+        <span class="metric-value" id="m-playing">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-key">Mode</span>
+        <span class="metric-value" id="m-mode">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-key">Volume</span>
+        <span class="metric-value" id="m-volume">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-key">Sounds loaded</span>
+        <span class="metric-value" id="m-sounds">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-key">Next sunrise</span>
+        <span class="metric-value" id="m-sunrise">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-key">Next sunset</span>
+        <span class="metric-value" id="m-sunset">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent activity -->
+  <div class="card">
+    <span class="label">Recent activity</span>
+    <div id="activityLog">
+      <div class="empty-state">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Location -->
+  <div class="card">
+    <span class="label">Location</span>
+    <p class="hint">Used to compute sunrise and sunset for the dawn and dusk sessions. Find your coordinates at google.com/maps — right-click your property.</p>
+    <div class="loc-form">
+      <div class="field full">
+        <label for="loc-name">Name</label>
+        <input type="text" id="loc-name" placeholder="Property">
+      </div>
+      <div class="field">
+        <label for="loc-lat">Latitude</label>
+        <input type="number" id="loc-lat" step="0.0001" placeholder="47.6456">
+      </div>
+      <div class="field">
+        <label for="loc-lng">Longitude</label>
+        <input type="number" id="loc-lng" step="0.0001" placeholder="-122.2187">
+      </div>
+      <div class="field full">
+        <label for="loc-tz">Timezone</label>
+        <input type="text" id="loc-tz" placeholder="America/Los_Angeles">
+      </div>
+      <div class="form-msg" id="loc-msg"></div>
+      <div class="form-actions">
+        <button class="btn secondary" onclick="loadLocation()">Reset</button>
+        <button class="btn" onclick="saveLocation()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Architecture -->
+  <div class="card">
+    <span class="label">System architecture</span>
+<pre class="arch">            ┌──────────────────────────┐
+            │     Phone / Browser      │
+            │  http://gooseguard:5000  │
+            └────────────┬─────────────┘
+                         │  HTTP + JSON
+            ┌────────────▼─────────────┐
+            │      Flask (app.py)      │◄── config.json
+            │    /api/*   /status      │◄── hardware.json
+            │                          │──► activity.jsonl
+            └─┬──────────┬────────────┬┘
+              │          │            │
+    ┌─────────▼────┐ ┌───▼──────┐ ┌───▼────────────┐
+    │ SoundEngine  │ │Scheduler │ │ MotionMonitor  │
+    │   pygame     │ │APSched.  │ │   RPi.GPIO     │
+    │ anti-habit.  │ │ astral   │ │ PIR HC-SR501   │
+    └───────┬──────┘ └────┬─────┘ └────────┬───────┘
+            │             │                │
+     ┌──────▼─────┐  ┌────▼──────┐   ┌─────▼─────┐
+     │  speaker   │  │  sunrise/ │   │  motion   │
+     │  (3.5mm)   │  │   sunset  │   │  trigger  │
+     └────────────┘  └───────────┘   └───────────┘
+</pre>
+    <div class="arch-note">
+      Flask serves the control panel and REST API. SoundEngine picks clips using
+      weighted categories plus a recently-played deque so geese don't habituate.
+      Scheduler plans dawn, dusk and midday sessions using astral's sunrise/sunset
+      for the configured location. MotionMonitor polls a PIR sensor and plays
+      bursts when motion mode is on.
+    </div>
+  </div>
+
+  <!-- Hardware -->
+  <div class="card">
+    <span class="label">Hardware</span>
+    <p class="hint">Shopping list for building one from scratch or replacing a broken part. Links go to vendor product pages or Amazon search results so nothing 404s.</p>
+    <div class="hw-tabs">
+      <button class="hw-tab active" data-filter="all" onclick="setHwFilter('all', this)">All</button>
+      <button class="hw-tab" data-filter="core" onclick="setHwFilter('core', this)">First-time setup</button>
+      <button class="hw-tab" data-filter="optional" onclick="setHwFilter('optional', this)">Optional / motion</button>
+    </div>
+    <div id="hwList"><div class="empty-state">Loading...</div></div>
+  </div>
+
+  <div class="footer-link">
+    <a href="/">&larr; back to control panel</a>
+  </div>
+
+<script>
+  async function fetchJSON(path) {
+    try {
+      const res = await fetch(path);
+      return await res.json();
+    } catch (e) {
+      console.error('API error:', path, e);
+      return null;
+    }
+  }
+
+  async function postJSON(path, body) {
+    try {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      return await res.json();
+    } catch (e) {
+      console.error('API error:', path, e);
+      return null;
+    }
+  }
+
+  function setText(id, v) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = (v === null || v === undefined || v === '') ? '—' : v;
+  }
+
+  function setBar(id, pct, hotAt, warnAt) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const p = Math.max(0, Math.min(100, pct || 0));
+    el.style.width = p + '%';
+    el.className = 'bar-fill';
+    if (p >= (hotAt || 85)) el.classList.add('hot');
+    else if (p >= (warnAt || 70)) el.classList.add('warn');
+  }
+
+  function setModeBadge(mode) {
+    const badge = document.getElementById('modeBadge');
+    if (!badge) return;
+    badge.textContent = (mode || '—').toUpperCase();
+    badge.className = 'mode-badge';
+    if (mode === 'manual') badge.classList.add('manual');
+    else if (mode && mode.indexOf('motion') !== -1) badge.classList.add('motion');
+  }
+
+  async function refreshSystem() {
+    const data = await fetchJSON('/api/system');
+    if (!data) {
+      setText('m-service', 'unreachable');
+      return;
+    }
+
+    // Service status with color
+    const svcEl = document.getElementById('m-service');
+    const svc = data.service || 'unknown';
+    svcEl.textContent = svc;
+    svcEl.className = 'metric-value';
+    if (svc === 'active') svcEl.classList.add('active');
+    else if (svc === 'inactive' || svc === 'failed') svcEl.classList.add('error');
+    else svcEl.classList.add('warn');
+
+    setText('m-uptime', data.uptime);
+    setText('m-hostname', data.hostname);
+    setText('m-ip', data.ip);
+
+    // CPU temp
+    if (data.cpu_temp_c !== null && data.cpu_temp_c !== undefined) {
+      setText('m-cputemp', data.cpu_temp_c + '°C');
+      // Pi throttles at 80°C, shutdown at 85°C. Scale 0→85.
+      setBar('m-cputemp-bar', (data.cpu_temp_c / 85) * 100, 85, 70);
+    } else {
+      setText('m-cputemp', 'n/a');
+    }
+
+    // Memory
+    if (data.memory) {
+      setText('m-mem', data.memory.used_mb + ' / ' + data.memory.total_mb + ' MB');
+      setBar('m-mem-bar', data.memory.percent_used);
+    }
+
+    // Disk
+    if (data.disk) {
+      setText('m-disk', data.disk.free_gb + ' GB free');
+      setBar('m-disk-bar', data.disk.percent_used);
+    }
+
+    // Load avg
+    if (data.load_average && data.load_average.length) {
+      setText('m-load', data.load_average.map(function(x) { return x.toFixed(2); }).join('  '));
+    }
+
+    // Now-playing
+    setText('m-playing', data.playing ? (data.current_sound || 'yes') : 'idle');
+    setText('m-mode', (data.mode || '—').toUpperCase());
+    setText('m-volume', (data.volume != null ? data.volume : 0) + '%');
+    setText('m-sunrise', data.sun && data.sun.sunrise);
+    setText('m-sunset', data.sun && data.sun.sunset);
+
+    if (data.sound_counts) {
+      const entries = Object.entries(data.sound_counts);
+      const total = entries.reduce(function(a, kv) { return a + kv[1]; }, 0);
+      if (total === 0) {
+        setText('m-sounds', 'none — add .mp3s to sounds/');
+      } else {
+        const parts = entries.map(function(kv) { return kv[0] + ' ' + kv[1]; }).join(', ');
+        setText('m-sounds', total + ' (' + parts + ')');
+      }
+    }
+
+    setModeBadge(data.mode);
+  }
+
+  async function refreshLog() {
+    const data = await fetchJSON('/api/log');
+    const container = document.getElementById('activityLog');
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div class="empty-state">No activity yet</div>';
+      return;
+    }
+    container.innerHTML = data.slice(0, 15).map(function(e) {
+      const name = (e.sound || '').replace(/\.(mp3|wav|ogg)$/i, '').replace(/[-_]/g, ' ');
+      return '<div class="log-entry">' +
+        '<span class="log-time">' + (e.time || '') + '</span>' +
+        '<span class="log-sound">' + name + '</span>' +
+        '<span class="log-source">' + (e.source || '') + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  // --- Location ---
+
+  async function loadLocation() {
+    const data = await fetchJSON('/api/location');
+    if (!data) return;
+    document.getElementById('loc-name').value = data.name || '';
+    document.getElementById('loc-lat').value = data.latitude != null ? data.latitude : '';
+    document.getElementById('loc-lng').value = data.longitude != null ? data.longitude : '';
+    document.getElementById('loc-tz').value = data.timezone || '';
+    const msg = document.getElementById('loc-msg');
+    msg.textContent = '';
+    msg.classList.remove('error');
+  }
+
+  async function saveLocation() {
+    const msg = document.getElementById('loc-msg');
+    msg.classList.remove('error');
+    msg.textContent = 'Saving...';
+
+    const latRaw = document.getElementById('loc-lat').value;
+    const lngRaw = document.getElementById('loc-lng').value;
+    const lat = parseFloat(latRaw);
+    const lng = parseFloat(lngRaw);
+    if (isNaN(lat) || isNaN(lng)) {
+      msg.classList.add('error');
+      msg.textContent = 'Latitude and longitude must be numbers.';
+      return;
+    }
+
+    const body = {
+      name: document.getElementById('loc-name').value,
+      latitude: lat,
+      longitude: lng,
+      timezone: document.getElementById('loc-tz').value,
+    };
+    const result = await postJSON('/api/location', body);
+    if (result && result.status === 'ok') {
+      msg.textContent = 'Saved. ' + (result.note || '');
+      refreshSystem();
+    } else {
+      msg.classList.add('error');
+      msg.textContent = (result && result.message) || 'Error saving location.';
+    }
+  }
+
+  // --- Hardware ---
+
+  let hardwareItems = [];
+  let hwFilter = 'all';
+
+  async function loadHardware() {
+    const data = await fetchJSON('/api/hardware');
+    if (!data) return;
+    hardwareItems = data.items || [];
+    renderHardware();
+  }
+
+  function setHwFilter(filter, btn) {
+    hwFilter = filter;
+    document.querySelectorAll('.hw-tab').forEach(function(t) { t.classList.remove('active'); });
+    btn.classList.add('active');
+    renderHardware();
+  }
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, function(c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+
+  function renderHardware() {
+    const container = document.getElementById('hwList');
+    const items = hardwareItems.filter(function(item) {
+      if (hwFilter === 'all') return true;
+      return item.category === hwFilter;
+    });
+    if (items.length === 0) {
+      container.innerHTML = '<div class="empty-state">No items</div>';
+      return;
+    }
+    container.innerHTML = items.map(function(item) {
+      const badge = item.required
+        ? '<span class="hw-badge required">required</span>'
+        : '<span class="hw-badge">optional</span>';
+      const vendors = (item.vendors || []).map(function(v) {
+        return '<a class="hw-vendor" href="' + escapeHtml(v.url) + '" target="_blank" rel="noopener">' + escapeHtml(v.label) + ' &#8599;</a>';
+      }).join('');
+      return '<div class="hw-item">' +
+        '<div class="hw-name">' + escapeHtml(item.name) + badge + '</div>' +
+        '<div class="hw-role">' + escapeHtml(item.role || '') + '</div>' +
+        (item.notes ? '<div class="hw-notes">' + escapeHtml(item.notes) + '</div>' : '') +
+        '<div class="hw-vendors">' + vendors + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  // --- Init ---
+
+  async function init() {
+    await Promise.all([refreshSystem(), refreshLog(), loadLocation(), loadHardware()]);
+  }
+
+  init();
+  setInterval(refreshSystem, 10000);
+  setInterval(refreshLog, 15000);
+</script>
+
+</body>
+</html>

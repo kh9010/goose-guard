@@ -1,0 +1,107 @@
+{
+  "items": [
+    {
+      "id": "pi4",
+      "name": "Raspberry Pi 4 Model B (4GB)",
+      "role": "Brain — runs the Goose Guard software",
+      "category": "core",
+      "required": true,
+      "notes": "Any Pi 4 or newer works. 4GB is plenty for audio playback.",
+      "vendors": [
+        {"label": "Raspberry Pi (official)", "url": "https://www.raspberrypi.com/products/raspberry-pi-4-model-b/"},
+        {"label": "Search Amazon", "url": "https://www.amazon.com/s?k=raspberry+pi+4+model+b+4gb"}
+      ]
+    },
+    {
+      "id": "psu",
+      "name": "Official USB-C Power Supply (5.1V 3A)",
+      "role": "Powers the Pi",
+      "category": "core",
+      "required": true,
+      "notes": "Do not use a phone charger — under-powered supplies cause audio glitches and random reboots.",
+      "vendors": [
+        {"label": "Raspberry Pi (official)", "url": "https://www.raspberrypi.com/products/type-c-power-supply/"},
+        {"label": "Search Amazon", "url": "https://www.amazon.com/s?k=raspberry+pi+4+usb-c+power+supply+official"}
+      ]
+    },
+    {
+      "id": "sdcard",
+      "name": "MicroSD Card (32GB, A1, Class 10)",
+      "role": "Storage for OS and sound library",
+      "category": "core",
+      "required": true,
+      "notes": "SanDisk Extreme or Samsung Evo Plus are reliable picks. 32GB holds hundreds of deterrent clips.",
+      "vendors": [
+        {"label": "Search Amazon", "url": "https://www.amazon.com/s?k=samsung+evo+plus+32gb+microsd"}
+      ]
+    },
+    {
+      "id": "speaker",
+      "name": "Amplified Outdoor Speaker",
+      "role": "Makes the noise the geese hate",
+      "category": "core",
+      "required": true,
+      "notes": "Any powered speaker with a 3.5mm input works. For larger properties, a horn speaker plus small amplifier gives much longer range.",
+      "vendors": [
+        {"label": "Amazon — patio speaker", "url": "https://www.amazon.com/s?k=outdoor+amplified+speaker+3.5mm"},
+        {"label": "Amazon — horn + amp", "url": "https://www.amazon.com/s?k=pa+horn+speaker+amplifier+12v"}
+      ]
+    },
+    {
+      "id": "audio-cable",
+      "name": "3.5mm Stereo Audio Cable",
+      "role": "Connects the Pi to the speaker",
+      "category": "core",
+      "required": true,
+      "notes": "Get a length that comfortably reaches from the Pi's sheltered spot to the speaker.",
+      "vendors": [
+        {"label": "Search Amazon", "url": "https://www.amazon.com/s?k=3.5mm+stereo+audio+cable+aux"}
+      ]
+    },
+    {
+      "id": "case",
+      "name": "Raspberry Pi Case",
+      "role": "Protects the Pi",
+      "category": "core",
+      "required": true,
+      "notes": "If the Pi lives in a shed or under eaves a basic case with a fan is fine. Fully outdoor deployments need an IP-rated enclosure.",
+      "vendors": [
+        {"label": "Amazon — basic case", "url": "https://www.amazon.com/s?k=raspberry+pi+4+case+with+fan"},
+        {"label": "Amazon — weatherproof", "url": "https://www.amazon.com/s?k=raspberry+pi+weatherproof+enclosure+ip65"}
+      ]
+    },
+    {
+      "id": "pir",
+      "name": "PIR Motion Sensor (HC-SR501)",
+      "role": "Triggers sounds when something moves",
+      "category": "optional",
+      "required": false,
+      "notes": "Only needed for Motion mode. Wire VCC→5V, GND→GND, OUT→GPIO17 (changeable in config.json).",
+      "vendors": [
+        {"label": "Search Amazon", "url": "https://www.amazon.com/s?k=hc-sr501+pir+motion+sensor"}
+      ]
+    },
+    {
+      "id": "jumpers",
+      "name": "Female-to-Female Jumper Wires",
+      "role": "Wires the PIR sensor to the Pi GPIO pins",
+      "category": "optional",
+      "required": false,
+      "notes": "Three wires is all you need for the PIR; buy a 40-pack for future tinkering.",
+      "vendors": [
+        {"label": "Search Amazon", "url": "https://www.amazon.com/s?k=female+to+female+jumper+wires+dupont"}
+      ]
+    },
+    {
+      "id": "ethernet",
+      "name": "Ethernet Cable",
+      "role": "Wired network if Wi-Fi is flaky at the edge of the property",
+      "category": "optional",
+      "required": false,
+      "notes": "Pi 4 has Wi-Fi built in, but wired is more reliable outdoors.",
+      "vendors": [
+        {"label": "Search Amazon", "url": "https://www.amazon.com/s?k=cat6+ethernet+cable+outdoor"}
+      ]
+    }
+  ]
+}

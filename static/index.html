@@ -181,6 +181,12 @@
       color: #555;
     }
 
+    .sound-actions {
+      display: flex;
+      gap: 0.3rem;
+      align-items: center;
+    }
+
     .sound-play-btn {
       background: none;
       border: 1px solid #e8e6e1;
@@ -194,6 +200,73 @@
     }
 
     .sound-play-btn:active { background: #f5f5f3; }
+
+    .sound-delete-btn {
+      background: none;
+      border: 1px solid #e8e6e1;
+      border-radius: 4px;
+      padding: 0.15rem 0.5rem;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem;
+      line-height: 1;
+      color: #bbb;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .sound-delete-btn:active {
+      background: #fae0e0;
+      color: #c44;
+      border-color: #c44;
+    }
+
+    /* Schedule editor */
+    .schedule-detail {
+      margin-top: 0.9rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid #f0eeea;
+    }
+
+    .detail-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      padding: 0.35rem 0;
+      font-size: 0.78rem;
+      color: #666;
+    }
+
+    .detail-label {
+      color: #888;
+      font-weight: 500;
+      min-width: 3.2rem;
+    }
+
+    .detail-unit {
+      color: #aaa;
+      font-size: 0.72rem;
+    }
+
+    .mini-input {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.82rem;
+      padding: 0.3rem 0.45rem;
+      border: 1px solid #e8e6e1;
+      border-radius: 3px;
+      background: #fafaf8;
+      color: #1a1a1a;
+      width: 4.2rem;
+      -webkit-appearance: none;
+    }
+
+    .mini-input[type="time"] { width: 5.8rem; }
+
+    .mini-input:focus {
+      outline: none;
+      border-color: #1a1a1a;
+      background: #fff;
+    }
 
     /* Schedule */
     .schedule-row {
@@ -398,6 +471,33 @@
       </div>
     </div>
     <div class="sun-info" id="sunInfo"></div>
+    <div class="schedule-detail">
+      <div class="detail-row">
+        <span class="detail-label">Dawn</span>
+        <input class="mini-input" type="number" id="dawnOffset" value="-30" onchange="updateSchedule()">
+        <span class="detail-unit">min offset, for</span>
+        <input class="mini-input" type="number" id="dawnDuration" value="45" min="5" max="240" onchange="updateSchedule()">
+        <span class="detail-unit">min</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Dusk</span>
+        <input class="mini-input" type="number" id="duskOffset" value="-30" onchange="updateSchedule()">
+        <span class="detail-unit">min offset, for</span>
+        <input class="mini-input" type="number" id="duskDuration" value="45" min="5" max="240" onchange="updateSchedule()">
+        <span class="detail-unit">min</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Midday</span>
+        <input class="mini-input" type="number" id="middayCount" value="3" min="1" max="20" onchange="updateSchedule()">
+        <span class="detail-unit">bursts</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Quiet</span>
+        <input class="mini-input" type="time" id="quietStart" value="22:00" onchange="updateSchedule()">
+        <span class="detail-unit">to</span>
+        <input class="mini-input" type="time" id="quietEnd" value="05:00" onchange="updateSchedule()">
+      </div>
+    </div>
   </div>
 
   <!-- Mode -->
@@ -430,6 +530,10 @@
     <div id="activityLog">
       <div class="empty-state">No activity yet</div>
     </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 1.5rem; font-size: 0.82rem;">
+    <a href="/status" style="color: #888; text-decoration: none; border-bottom: 1px solid #e8e6e1; padding-bottom: 0.1rem;">system status &amp; hardware &rarr;</a>
   </div>
 
 <script>
@@ -534,17 +638,39 @@
         const name = sound.replace(/\.(mp3|wav|ogg)$/i, '').replace(/[-_]/g, ' ');
         row.innerHTML = '<span>' + name + '</span>';
 
-        const btn = document.createElement('button');
-        btn.className = 'sound-play-btn';
-        btn.textContent = 'play';
-        btn.onclick = async function(e) {
+        const actions = document.createElement('div');
+        actions.className = 'sound-actions';
+
+        const playBtn = document.createElement('button');
+        playBtn.className = 'sound-play-btn';
+        playBtn.textContent = 'play';
+        playBtn.onclick = async function(e) {
           e.stopPropagation();
           this.textContent = '...';
           await postJSON('/api/play', { sound: sound });
           this.textContent = 'play';
           refreshLog();
         };
-        row.appendChild(btn);
+        actions.appendChild(playBtn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'sound-delete-btn';
+        deleteBtn.title = 'Remove';
+        deleteBtn.textContent = '\u00D7';
+        deleteBtn.onclick = async function(e) {
+          e.stopPropagation();
+          if (!confirm('Remove "' + name + '"?')) return;
+          const result = await postJSON('/api/sounds/delete', { sound: sound, category: cat });
+          if (result && result.status === 'ok') {
+            loadSounds();
+            refreshLog();
+          } else {
+            alert((result && result.message) || 'Could not remove sound');
+          }
+        };
+        actions.appendChild(deleteBtn);
+
+        row.appendChild(actions);
         list.appendChild(row);
       }
 
@@ -560,10 +686,22 @@
     if (!data) return;
 
     const sched = data.schedule || {};
+    const dawn = sched.dawn || {};
+    const dusk = sched.dusk || {};
+    const midday = sched.midday || {};
+    const quiet = sched.quiet_hours || {};
 
-    document.getElementById('dawnToggle').checked = (sched.dawn || {}).enabled !== false;
-    document.getElementById('duskToggle').checked = (sched.dusk || {}).enabled !== false;
-    document.getElementById('middayToggle').checked = (sched.midday || {}).enabled !== false;
+    document.getElementById('dawnToggle').checked = dawn.enabled !== false;
+    document.getElementById('duskToggle').checked = dusk.enabled !== false;
+    document.getElementById('middayToggle').checked = midday.enabled !== false;
+
+    document.getElementById('dawnOffset').value = dawn.offset_minutes != null ? dawn.offset_minutes : -30;
+    document.getElementById('dawnDuration').value = dawn.duration_minutes != null ? dawn.duration_minutes : 45;
+    document.getElementById('duskOffset').value = dusk.offset_minutes != null ? dusk.offset_minutes : -30;
+    document.getElementById('duskDuration').value = dusk.duration_minutes != null ? dusk.duration_minutes : 45;
+    document.getElementById('middayCount').value = midday.count != null ? midday.count : 3;
+    document.getElementById('quietStart').value = quiet.start || '22:00';
+    document.getElementById('quietEnd').value = quiet.end || '05:00';
 
     if (data.sunrise) {
       document.getElementById('dawnTime').textContent = data.sunrise;
@@ -581,23 +719,26 @@
     const schedule = {
       dawn: {
         enabled: document.getElementById('dawnToggle').checked,
-        offset_minutes: -30,
-        duration_minutes: 45,
+        offset_minutes: parseInt(document.getElementById('dawnOffset').value, 10) || -30,
+        duration_minutes: parseInt(document.getElementById('dawnDuration').value, 10) || 45,
         interval_min: 120,
         interval_max: 300,
       },
       dusk: {
         enabled: document.getElementById('duskToggle').checked,
-        offset_minutes: -30,
-        duration_minutes: 45,
+        offset_minutes: parseInt(document.getElementById('duskOffset').value, 10) || -30,
+        duration_minutes: parseInt(document.getElementById('duskDuration').value, 10) || 45,
         interval_min: 120,
         interval_max: 300,
       },
       midday: {
         enabled: document.getElementById('middayToggle').checked,
-        count: 3,
+        count: parseInt(document.getElementById('middayCount').value, 10) || 3,
       },
-      quiet_hours: { start: '22:00', end: '05:00' },
+      quiet_hours: {
+        start: document.getElementById('quietStart').value || '22:00',
+        end: document.getElementById('quietEnd').value || '05:00',
+      },
     };
 
     await postJSON('/api/schedule', { schedule });

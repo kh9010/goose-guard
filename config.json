@@ -1,6 +1,13 @@
 {
   "mode": "auto",
   "volume": 85,
+  "location": {
+    "name": "Property",
+    "region": "",
+    "timezone": "America/Los_Angeles",
+    "latitude": 47.6456,
+    "longitude": -122.2187
+  },
   "schedule": {
     "dawn": {
       "enabled": true,
@@ -29,7 +36,8 @@
     "predator": 3,
     "distress": 4,
     "startle": 1,
-    "custom": 2
+    "custom": 2,
+    "generated": 3
   },
   "motion": {
     "enabled": false,
