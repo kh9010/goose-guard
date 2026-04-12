@@ -1,0 +1,5 @@
+flask>=3.0
+pygame>=2.5
+apscheduler>=3.10
+astral>=3.2
+RPi.GPIO>=0.7; platform_machine == "armv7l" or platform_machine == "aarch64"

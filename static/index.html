@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Goose Guard">
+  <title>Goose Guard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Fraunces:ital,wght@1,400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      background: #fafaf8;
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 1.5rem;
+      padding-bottom: 3rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 1.6rem;
+      color: #1a1a1a;
+    }
+
+    .mode-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: #1a1a1a;
+      color: #fafaf8;
+      padding: 0.3rem 0.7rem;
+      border-radius: 3px;
+    }
+
+    .mode-badge.manual { background: #999; }
+    .mode-badge.motion { background: #6b7c5e; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e8e6e1;
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #888;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    /* Scare button */
+    .scare-btn {
+      width: 100%;
+      padding: 1.1rem;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      background: #1a1a1a;
+      color: #fafaf8;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .scare-btn:active { transform: scale(0.97); }
+    .scare-btn.playing {
+      background: #c44;
+      animation: pulse 1.2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Status */
+    .status-line {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 0.75rem;
+      line-height: 1.5;
+    }
+    .status-line strong {
+      color: #1a1a1a;
+      font-weight: 500;
+    }
+
+    /* Volume slider */
+    .volume-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: #e8e6e1;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      background: #1a1a1a;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .volume-val {
+      font-size: 0.85rem;
+      font-weight: 500;
+      min-width: 2.5rem;
+      text-align: right;
+    }
+
+    /* Sound list */
+    .category-header {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #1a1a1a;
+      padding: 0.5rem 0;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f0eeea;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .category-header .arrow {
+      font-size: 0.6rem;
+      color: #bbb;
+      transition: transform 0.2s;
+    }
+
+    .category-header.open .arrow {
+      transform: rotate(90deg);
+    }
+
+    .sound-list {
+      display: none;
+      padding: 0.25rem 0;
+    }
+
+    .sound-list.open { display: block; }
+
+    .sound-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.45rem 0 0.45rem 0.75rem;
+      font-size: 0.8rem;
+      color: #555;
+    }
+
+    .sound-play-btn {
+      background: none;
+      border: 1px solid #e8e6e1;
+      border-radius: 4px;
+      padding: 0.25rem 0.6rem;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.72rem;
+      color: #1a1a1a;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .sound-play-btn:active { background: #f5f5f3; }
+
+    /* Schedule */
+    .schedule-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid #f5f3f0;
+      font-size: 0.85rem;
+    }
+
+    .schedule-row:last-child { border-bottom: none; }
+
+    .schedule-row .left {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .schedule-time {
+      color: #999;
+      font-size: 0.78rem;
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #ddd;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle input:checked + .toggle-slider {
+      background: #1a1a1a;
+    }
+
+    .toggle input:checked + .toggle-slider::before {
+      transform: translateX(18px);
+    }
+
+    /* Mode selector */
+    .mode-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .mode-option {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0;
+      font-size: 0.85rem;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .mode-option input[type="radio"] {
+      accent-color: #1a1a1a;
+      width: 16px;
+      height: 16px;
+    }
+
+    .mode-desc {
+      font-size: 0.72rem;
+      color: #999;
+      margin-left: 1.6rem;
+      margin-top: -0.25rem;
+    }
+
+    /* Activity log */
+    .log-entry {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.4rem 0;
+      font-size: 0.8rem;
+      border-bottom: 1px solid #f8f7f5;
+    }
+
+    .log-entry:last-child { border-bottom: none; }
+
+    .log-time {
+      color: #bbb;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    .log-sound { color: #444; }
+
+    .log-source {
+      color: #bbb;
+      font-size: 0.72rem;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .empty-state {
+      font-size: 0.82rem;
+      color: #ccc;
+      font-style: italic;
+      padding: 0.5rem 0;
+    }
+
+    /* Sun times */
+    .sun-info {
+      display: flex;
+      gap: 1.5rem;
+      font-size: 0.78rem;
+      color: #999;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>goose guard</h1>
+    <span class="mode-badge" id="modeBadge">AUTO</span>
+  </header>
+
+  <!-- Scare button -->
+  <div class="card">
+    <button class="scare-btn" id="scareBtn" onclick="scareNow()">SCARE NOW</button>
+    <div class="status-line" id="statusLine">Checking status...</div>
+  </div>
+
+  <!-- Volume -->
+  <div class="card">
+    <span class="label">Volume</span>
+    <div class="volume-row">
+      <input type="range" id="volumeSlider" min="0" max="100" value="85" oninput="updateVolumeLabel()" onchange="setVolume()">
+      <span class="volume-val" id="volumeVal">85%</span>
+    </div>
+  </div>
+
+  <!-- Sounds -->
+  <div class="card">
+    <span class="label">Sounds</span>
+    <div id="soundsList"></div>
+  </div>
+
+  <!-- Schedule -->
+  <div class="card">
+    <span class="label">Schedule</span>
+    <div id="scheduleSection">
+      <div class="schedule-row">
+        <div class="left">
+          <span>Dawn</span>
+          <span class="schedule-time" id="dawnTime"></span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="dawnToggle" onchange="updateSchedule()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="schedule-row">
+        <div class="left">
+          <span>Dusk</span>
+          <span class="schedule-time" id="duskTime"></span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="duskToggle" onchange="updateSchedule()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="schedule-row">
+        <div class="left">
+          <span>Midday</span>
+          <span class="schedule-time">random burst</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="middayToggle" onchange="updateSchedule()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    <div class="sun-info" id="sunInfo"></div>
+  </div>
+
+  <!-- Mode -->
+  <div class="card">
+    <span class="label">Mode</span>
+    <div class="mode-options">
+      <label class="mode-option">
+        <input type="radio" name="mode" value="manual" onchange="setMode('manual')">
+        Manual
+      </label>
+      <div class="mode-desc">Only plays when you tap Scare Now</div>
+
+      <label class="mode-option">
+        <input type="radio" name="mode" value="auto" onchange="setMode('auto')">
+        Auto
+      </label>
+      <div class="mode-desc">Scheduled sessions at dawn, dusk, and midday</div>
+
+      <label class="mode-option">
+        <input type="radio" name="mode" value="motion+auto" onchange="setMode('motion+auto')">
+        Motion + Auto
+      </label>
+      <div class="mode-desc">Scheduled sessions plus PIR motion trigger</div>
+    </div>
+  </div>
+
+  <!-- Activity log -->
+  <div class="card">
+    <span class="label">Recent Activity</span>
+    <div id="activityLog">
+      <div class="empty-state">No activity yet</div>
+    </div>
+  </div>
+
+<script>
+  const API = '';  // same origin
+
+  // --- API calls ---
+
+  async function fetchJSON(path) {
+    try {
+      const res = await fetch(API + path);
+      return await res.json();
+    } catch (e) {
+      console.error('API error:', path, e);
+      return null;
+    }
+  }
+
+  async function postJSON(path, body) {
+    try {
+      const res = await fetch(API + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      return await res.json();
+    } catch (e) {
+      console.error('API error:', path, e);
+      return null;
+    }
+  }
+
+  // --- Scare button ---
+
+  async function scareNow() {
+    const btn = document.getElementById('scareBtn');
+    btn.classList.add('playing');
+    btn.textContent = 'SCARING...';
+
+    const result = await postJSON('/api/play', { category: 'random' });
+
+    if (result && result.sound) {
+      btn.textContent = result.sound;
+      setTimeout(() => {
+        btn.classList.remove('playing');
+        btn.textContent = 'SCARE NOW';
+      }, 3000);
+    } else {
+      btn.classList.remove('playing');
+      btn.textContent = 'SCARE NOW';
+    }
+
+    refreshStatus();
+    refreshLog();
+  }
+
+  // --- Volume ---
+
+  function updateVolumeLabel() {
+    const val = document.getElementById('volumeSlider').value;
+    document.getElementById('volumeVal').textContent = val + '%';
+  }
+
+  let volumeTimeout;
+  async function setVolume() {
+    clearTimeout(volumeTimeout);
+    volumeTimeout = setTimeout(async () => {
+      const level = parseInt(document.getElementById('volumeSlider').value);
+      await postJSON('/api/volume', { level });
+    }, 200);
+  }
+
+  // --- Sounds browser ---
+
+  async function loadSounds() {
+    const data = await fetchJSON('/api/sounds');
+    if (!data) return;
+
+    const container = document.getElementById('soundsList');
+    container.innerHTML = '';
+
+    const categories = Object.keys(data).sort();
+    if (categories.length === 0) {
+      container.innerHTML = '<div class="empty-state">No sound files found. Add .mp3 files to the sounds/ directory.</div>';
+      return;
+    }
+
+    for (const cat of categories) {
+      const header = document.createElement('div');
+      header.className = 'category-header';
+      header.innerHTML = '<span>' + cat + ' (' + data[cat].length + ')</span><span class="arrow">\u25B6</span>';
+      header.onclick = function() {
+        this.classList.toggle('open');
+        this.nextElementSibling.classList.toggle('open');
+      };
+
+      const list = document.createElement('div');
+      list.className = 'sound-list';
+
+      for (const sound of data[cat]) {
+        const row = document.createElement('div');
+        row.className = 'sound-row';
+        const name = sound.replace(/\.(mp3|wav|ogg)$/i, '').replace(/[-_]/g, ' ');
+        row.innerHTML = '<span>' + name + '</span>';
+
+        const btn = document.createElement('button');
+        btn.className = 'sound-play-btn';
+        btn.textContent = 'play';
+        btn.onclick = async function(e) {
+          e.stopPropagation();
+          this.textContent = '...';
+          await postJSON('/api/play', { sound: sound });
+          this.textContent = 'play';
+          refreshLog();
+        };
+        row.appendChild(btn);
+        list.appendChild(row);
+      }
+
+      container.appendChild(header);
+      container.appendChild(list);
+    }
+  }
+
+  // --- Schedule ---
+
+  async function loadSchedule() {
+    const data = await fetchJSON('/api/schedule');
+    if (!data) return;
+
+    const sched = data.schedule || {};
+
+    document.getElementById('dawnToggle').checked = (sched.dawn || {}).enabled !== false;
+    document.getElementById('duskToggle').checked = (sched.dusk || {}).enabled !== false;
+    document.getElementById('middayToggle').checked = (sched.midday || {}).enabled !== false;
+
+    if (data.sunrise) {
+      document.getElementById('dawnTime').textContent = data.sunrise;
+    }
+    if (data.sunset) {
+      document.getElementById('duskTime').textContent = data.sunset;
+    }
+    if (data.sunrise && data.sunset) {
+      document.getElementById('sunInfo').innerHTML =
+        '\u2600 sunrise ' + data.sunrise + '&nbsp;&nbsp;\u00B7&nbsp;&nbsp;sunset ' + data.sunset;
+    }
+  }
+
+  async function updateSchedule() {
+    const schedule = {
+      dawn: {
+        enabled: document.getElementById('dawnToggle').checked,
+        offset_minutes: -30,
+        duration_minutes: 45,
+        interval_min: 120,
+        interval_max: 300,
+      },
+      dusk: {
+        enabled: document.getElementById('duskToggle').checked,
+        offset_minutes: -30,
+        duration_minutes: 45,
+        interval_min: 120,
+        interval_max: 300,
+      },
+      midday: {
+        enabled: document.getElementById('middayToggle').checked,
+        count: 3,
+      },
+      quiet_hours: { start: '22:00', end: '05:00' },
+    };
+
+    await postJSON('/api/schedule', { schedule });
+  }
+
+  // --- Mode ---
+
+  function setModeUI(mode) {
+    const radios = document.querySelectorAll('input[name="mode"]');
+    radios.forEach(r => { r.checked = r.value === mode; });
+
+    const badge = document.getElementById('modeBadge');
+    badge.textContent = mode.toUpperCase();
+    badge.className = 'mode-badge';
+    if (mode === 'manual') badge.classList.add('manual');
+    else if (mode.includes('motion')) badge.classList.add('motion');
+  }
+
+  async function setMode(mode) {
+    await postJSON('/api/mode', { mode });
+    setModeUI(mode);
+  }
+
+  // --- Activity log ---
+
+  async function refreshLog() {
+    const data = await fetchJSON('/api/log');
+    if (!data) return;
+
+    const container = document.getElementById('activityLog');
+
+    if (data.length === 0) {
+      container.innerHTML = '<div class="empty-state">No activity yet</div>';
+      return;
+    }
+
+    container.innerHTML = data.map(function(entry) {
+      return '<div class="log-entry">' +
+        '<span class="log-time">' + entry.time + '</span>' +
+        '<span class="log-sound">' + entry.sound + '</span>' +
+        '<span class="log-source">' + entry.source + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  // --- Status polling ---
+
+  let lastSound = null;
+  let lastSoundTime = null;
+
+  async function refreshStatus() {
+    const data = await fetchJSON('/api/status');
+    if (!data) {
+      document.getElementById('statusLine').textContent = 'Cannot reach device';
+      return;
+    }
+
+    // Update volume slider if not being dragged
+    if (!document.getElementById('volumeSlider').matches(':active')) {
+      document.getElementById('volumeSlider').value = data.volume;
+      document.getElementById('volumeVal').textContent = data.volume + '%';
+    }
+
+    // Update mode
+    setModeUI(data.mode);
+
+    // Update status line
+    const line = document.getElementById('statusLine');
+    if (data.playing && data.current_sound) {
+      line.innerHTML = 'Playing: <strong>' + data.current_sound + '</strong>';
+      lastSound = data.current_sound;
+      lastSoundTime = new Date();
+    } else if (lastSound && lastSoundTime) {
+      const ago = Math.round((Date.now() - lastSoundTime.getTime()) / 1000);
+      if (ago < 60) {
+        line.innerHTML = 'Last: <strong>' + lastSound + '</strong> ' + ago + 's ago';
+      } else {
+        const mins = Math.round(ago / 60);
+        line.innerHTML = 'Last: <strong>' + lastSound + '</strong> ' + mins + 'm ago';
+      }
+    } else {
+      line.textContent = 'Idle';
+    }
+
+    // Update scare button state
+    const btn = document.getElementById('scareBtn');
+    if (data.playing) {
+      btn.classList.add('playing');
+      btn.textContent = data.current_sound || 'PLAYING...';
+    }
+  }
+
+  // --- Init ---
+
+  async function init() {
+    await Promise.all([
+      refreshStatus(),
+      loadSounds(),
+      loadSchedule(),
+      refreshLog(),
+    ]);
+  }
+
+  init();
+  setInterval(refreshStatus, 5000);
+  setInterval(refreshLog, 15000);
+</script>
+
+</body>
+</html>

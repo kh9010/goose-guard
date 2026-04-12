@@ -1,0 +1,39 @@
+{
+  "mode": "auto",
+  "volume": 85,
+  "schedule": {
+    "dawn": {
+      "enabled": true,
+      "offset_minutes": -30,
+      "duration_minutes": 45,
+      "interval_min": 120,
+      "interval_max": 300
+    },
+    "dusk": {
+      "enabled": true,
+      "offset_minutes": -30,
+      "duration_minutes": 45,
+      "interval_min": 120,
+      "interval_max": 300
+    },
+    "midday": {
+      "enabled": true,
+      "count": 3
+    },
+    "quiet_hours": {
+      "start": "22:00",
+      "end": "05:00"
+    }
+  },
+  "category_weights": {
+    "predator": 3,
+    "distress": 4,
+    "startle": 1,
+    "custom": 2
+  },
+  "motion": {
+    "enabled": false,
+    "pin": 17,
+    "cooldown_seconds": 300
+  }
+}

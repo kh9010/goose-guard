@@ -1,0 +1,16 @@
+[Unit]
+Description=Goose Guard Sound Deterrent
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/goose-guard
+ExecStart=/home/pi/goose-guard/venv/bin/python app.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
