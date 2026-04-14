@@ -467,21 +467,8 @@
     const btn = document.getElementById('scareBtn');
     btn.classList.add('playing');
     btn.textContent = 'SCARING...';
-
-    const result = await postJSON('/api/play', { category: 'random' });
-
-    if (result && result.sound) {
-      btn.textContent = result.sound;
-      setTimeout(() => {
-        btn.classList.remove('playing');
-        btn.textContent = 'SCARE NOW';
-      }, 3000);
-    } else {
-      btn.classList.remove('playing');
-      btn.textContent = 'SCARE NOW';
-    }
-
-    refreshStatus();
+    await postJSON('/api/play', {});
+    await refreshStatus();
     refreshLog();
   }
 
@@ -597,7 +584,7 @@
         enabled: document.getElementById('middayToggle').checked,
         count: 3,
       },
-      quiet_hours: { start: '22:00', end: '05:00' },
+      quiet_hours: { start: '23:00', end: '04:00' },
     };
 
     await postJSON('/api/schedule', { schedule });
@@ -687,6 +674,9 @@
     if (data.playing) {
       btn.classList.add('playing');
       btn.textContent = data.current_sound || 'PLAYING...';
+    } else {
+      btn.classList.remove('playing');
+      btn.textContent = 'SCARE NOW';
     }
   }
 

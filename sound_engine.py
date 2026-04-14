@@ -15,7 +15,13 @@ import pygame
 
 class SoundEngine:
     def __init__(self, sounds_dir="sounds"):
-        pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=2048)
+        try:
+            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=2048)
+            self.mixer_ready = True
+        except pygame.error as e:
+            print(f"WARNING: audio mixer init failed ({e}). "
+                  f"Server will run but playback is disabled.")
+            self.mixer_ready = False
         self.sounds_dir = Path(sounds_dir)
         self.sounds = {}  # category -> list of file paths
         self.recently_played = deque(maxlen=15)
@@ -42,10 +48,11 @@ class SoundEngine:
 
     def get_sounds(self):
         """Return all sounds organized by category."""
-        self._scan_sounds()
-        result = {}
-        for category, files in self.sounds.items():
-            result[category] = [os.path.basename(f) for f in files]
+        with self._lock:
+            self._scan_sounds()
+            result = {}
+            for category, files in self.sounds.items():
+                result[category] = [os.path.basename(f) for f in files]
         return result
 
     def get_all_files(self):
@@ -111,6 +118,9 @@ class SoundEngine:
         Play a sound. Returns the filename played, or None if nothing to play.
         """
         with self._lock:
+            if not self.mixer_ready:
+                return None
+
             if specific_file:
                 sound_file = self._pick_sound(specific_file=specific_file)
             elif category_weights and not category:
@@ -147,18 +157,23 @@ class SoundEngine:
 
     def set_volume(self, level):
         """Set volume (0-100)."""
-        self.volume = max(0, min(100, level))
-        if self.playing:
-            pygame.mixer.music.set_volume(self.volume / 100.0)
+        with self._lock:
+            self.volume = max(0, min(100, level))
+            if self.playing:
+                pygame.mixer.music.set_volume(self.volume / 100.0)
 
     def is_playing(self):
         """Check if audio is currently playing."""
-        if self.playing and not pygame.mixer.music.get_busy():
-            self.playing = False
-            self.current_sound = None
-        return self.playing
+        with self._lock:
+            if self.playing and not pygame.mixer.music.get_busy():
+                self.playing = False
+                self.current_sound = None
+            return self.playing
 
     def get_current(self):
         """Return the currently playing sound filename, or None."""
-        self.is_playing()  # refresh state
-        return self.current_sound
+        with self._lock:
+            if self.playing and not pygame.mixer.music.get_busy():
+                self.playing = False
+                self.current_sound = None
+            return self.current_sound

@@ -46,7 +46,7 @@ def load_config():
                          "duration_minutes": 45, "interval_min": 120,
                          "interval_max": 300},
                 "midday": {"enabled": True, "count": 3},
-                "quiet_hours": {"start": "22:00", "end": "05:00"},
+                "quiet_hours": {"start": "23:00", "end": "04:00"},
             },
             "category_weights": {"predator": 3, "distress": 4,
                                  "startle": 1, "custom": 2},

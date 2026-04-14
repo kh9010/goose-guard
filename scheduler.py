@@ -8,15 +8,17 @@ import random
 import threading
 import time
 from datetime import datetime, timedelta
+from weakref import WeakSet
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from astral import LocationInfo
 from astral.sun import sun
+from zoneinfo import ZoneInfo
 
 
-# Default coordinates (update for your property)
-DEFAULT_LAT = 47.6456
-DEFAULT_LNG = -122.2187
+# 9010 NE 41st St, Yarrow Point, WA 98004
+DEFAULT_LAT = 47.6490
+DEFAULT_LNG = -122.2100
 DEFAULT_TIMEZONE = "America/Los_Angeles"
 
 
@@ -26,8 +28,8 @@ class DeterrentScheduler:
         self.config = config
         self.log_callback = log_callback or (lambda msg, src: None)
         self.scheduler = BackgroundScheduler(timezone=DEFAULT_TIMEZONE)
-        self._session_active = False
-        self._session_thread = None
+        self._active_stop_events = WeakSet()
+        self._sessions_lock = threading.Lock()
         self.location = LocationInfo(
             "Property", "WA", DEFAULT_TIMEZONE,
             DEFAULT_LAT, DEFAULT_LNG
@@ -47,13 +49,20 @@ class DeterrentScheduler:
 
     def stop(self):
         """Shut down the scheduler."""
-        self._session_active = False
+        self._stop_all_sessions()
         if self.scheduler.running:
             self.scheduler.shutdown(wait=False)
 
+    def _stop_all_sessions(self):
+        """Signal all running deterrent sessions to stop."""
+        with self._sessions_lock:
+            for ev in self._active_stop_events:
+                ev.set()
+
     def _get_sun_times(self):
-        """Get today's sunrise and sunset times."""
-        s = sun(self.location.observer, date=datetime.now().date())
+        """Get today's sunrise and sunset times in the configured local timezone."""
+        tz = ZoneInfo(DEFAULT_TIMEZONE)
+        s = sun(self.location.observer, date=datetime.now(tz).date(), tzinfo=tz)
         return s["sunrise"], s["sunset"]
 
     def _schedule_today(self):
@@ -64,7 +73,11 @@ class DeterrentScheduler:
         if mode not in ("auto", "motion+auto"):
             return
 
-        sunrise, sunset = self._get_sun_times()
+        try:
+            sunrise, sunset = self._get_sun_times()
+        except Exception as e:
+            print(f"Could not compute sun times: {e}. Skipping today's schedule.")
+            return
         now = datetime.now(sunrise.tzinfo)
 
         # Remove old one-off jobs
@@ -102,22 +115,24 @@ class DeterrentScheduler:
                     id="dusk_session",
                 )
 
-        # Midday patrol
+        # Midday patrol — pick a random hour in the remaining window
         midday_cfg = schedule_config.get("midday", {})
         if midday_cfg.get("enabled", True):
-            midday_hour = random.randint(10, 13)
-            midday_minute = random.randint(0, 59)
-            midday_time = now.replace(
-                hour=midday_hour, minute=midday_minute, second=0, microsecond=0
-            )
-            if midday_time > now:
-                self.scheduler.add_job(
-                    self._run_midday_burst,
-                    "date",
-                    run_date=midday_time,
-                    args=[midday_cfg],
-                    id="midday_session",
+            earliest_hour = max(10, now.hour + 1)
+            if earliest_hour <= 13:
+                midday_hour = random.randint(earliest_hour, 13)
+                midday_minute = random.randint(0, 59)
+                midday_time = now.replace(
+                    hour=midday_hour, minute=midday_minute, second=0, microsecond=0
                 )
+                if midday_time > now:
+                    self.scheduler.add_job(
+                        self._run_midday_burst,
+                        "date",
+                        run_date=midday_time,
+                        args=[midday_cfg],
+                        id="midday_session",
+                    )
 
     def _is_quiet_hours(self):
         """Check if current time is within quiet hours."""
@@ -147,15 +162,17 @@ class DeterrentScheduler:
             return
 
         duration = session_cfg.get("duration_minutes", 45)
-        interval_min = session_cfg.get("interval_min", 120)
-        interval_max = session_cfg.get("interval_max", 300)
+        interval_min = max(1, int(session_cfg.get("interval_min", 120)))
+        interval_max = max(interval_min, int(session_cfg.get("interval_max", 300)))
         category_weights = self.config.get("category_weights")
 
-        self._session_active = True
+        stop_event = threading.Event()
+        with self._sessions_lock:
+            self._active_stop_events.add(stop_event)
         end_time = time.time() + (duration * 60)
 
         def session_loop():
-            while self._session_active and time.time() < end_time:
+            while not stop_event.is_set() and time.time() < end_time:
                 if self._is_quiet_hours():
                     break
                 if self.config.get("mode", "manual") not in ("auto", "motion+auto"):
@@ -168,14 +185,12 @@ class DeterrentScheduler:
                 delay = random.randint(interval_min, interval_max)
                 # Sleep in small increments so we can stop quickly
                 for _ in range(delay):
-                    if not self._session_active:
+                    if stop_event.is_set():
                         return
                     time.sleep(1)
 
-            self._session_active = False
-
-        self._session_thread = threading.Thread(target=session_loop, daemon=True)
-        self._session_thread.start()
+        t = threading.Thread(target=session_loop, daemon=True)
+        t.start()
 
     def _run_midday_burst(self, midday_cfg):
         """Run a short midday burst of sounds."""
@@ -196,7 +211,7 @@ class DeterrentScheduler:
 
     def reschedule(self):
         """Call after config changes to re-plan today's sessions."""
-        self._session_active = False
+        self._stop_all_sessions()
         self._schedule_today()
 
     def get_next_times(self):
